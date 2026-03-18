@@ -84,12 +84,12 @@ class TTSClient(Protocol):
 class Chunk:
     index: int
     type: Literal["tts", "pause", "sfx", "gacha"]
-    text: str | None        # tts / gacha
-    duration: float | None  # pause
-    speed: float = 1.0      # tts / gacha speed modifier
-    gacha_n: int = 1        # gacha 版本數
-    sfx_name: str | None    # sfx clip 名稱 (e.g., "laugh")
-    sfx_fade: float = 0.05  # sfx fade-in/out 秒數
+    text: str | None = None        # tts / gacha
+    duration: float | None = None  # pause
+    speed: float = 1.0             # tts / gacha speed modifier
+    gacha_n: int = 1               # gacha 版本數
+    sfx_name: str | None = None    # sfx clip 名稱 (e.g., "laugh")
+    sfx_fade: float = 0.05         # sfx fade-in/out 秒數
 ```
 
 **斷句規則：** 依 `。！？\n` 切割。`<speed=X>` 標籤附著在前一個句子的 chunk 上，不單獨成為 chunk。
@@ -113,10 +113,18 @@ class Chunk:
 
 ## 6. AsyncIO Orchestrator
 
-- `asyncio.gather()` 並發所有 TTS / gacha 請求
-- `asyncio.Semaphore(max_concurrent)` 防止 Modal rate-limit flooding
-- **Gacha 時序：** 全部 TTS 完成後，依序呈現所有 gacha 互動，不在生成途中打斷
-- `--keep-chunks` 時輸出到 `./chunks/`，gacha 的 N 個版本全部保留
+### Phase 1 vs Phase 3 Async Strategy
+
+- **Phase 1：** `orchestrator.py` 使用 `asyncio.run()` 包裝，內部用 **sequential `await`**（一個 chunk 完成再送下一個）。TTSClient 介面已是 `async def`，Phase 3 升級時 `orchestrator.py` 只需改成 `asyncio.gather()`，其他模組不動。
+- **Phase 3：** 改用 `asyncio.gather()` 並發所有請求，加入 `asyncio.Semaphore(max_concurrent)` 防止 Modal rate-limit flooding。
+
+**Gacha 時序：** 全部 TTS 完成後，依序呈現所有 gacha 互動，不在生成途中打斷。
+
+`--keep-chunks` 時輸出到 `./chunks/`，gacha 的 N 個版本全部保留。目錄若已存在則**覆蓋**（舊檔案直接被同名新檔取代），不中止執行。
+
+### Gacha Seed Strategy
+
+N 個版本的 seed 使用**固定遞增序列**：`[42, 1337, 7, 999, ...]`（預定義列表，取前 N 個）。這確保跨 run 的可重現性——相同腳本多次執行，同一個 gacha chunk 永遠生成相同的 N 個候選，方便 debug。Seed 列表硬編碼在 `gacha.py` 中，不對外暴露設定。
 
 ### Audio Spec Pin
 
@@ -146,6 +154,12 @@ speed=0.85 →  atempo=0.85             (單一 instance)
 - 每個 sfx clip 在 splice 前自動套用 fade-in/out（預設 50ms）
 - `<sfx=laugh,fade=0>` 可停用 fade（硬接）
 
+**SFX Sample Rate 處理：** 若 sfx clip 的 sample rate / channel 與音訊規格（24kHz mono）不符，`assembler.py` 自動用 pydub `.set_frame_rate(24000).set_channels(1)` 轉換，並印出警告：
+```
+[WARN] sfx/laugh.wav is 44100Hz stereo — auto-converting to 24kHz mono.
+```
+轉換後才 splice，原始 clip 檔案不被修改。
+
 ---
 
 ## 9. Gacha Interactive UX
@@ -163,9 +177,14 @@ speed=0.85 →  atempo=0.85             (單一 instance)
 ```
 
 - 單鍵輸入（無需 Enter 播放）：`termios` + `tty` raw mode
-- 音訊播放：`subprocess.run(["afplay", path])`（macOS 內建）
-- 未先播放直接 Enter：重播 Option 1 並提示確認
+- 音訊播放：`subprocess.run(["afplay", path])`（macOS 內建，blocking，播完才回到互動介面）
 - 多個 gacha 標籤：依序處理，顯示進度（GACHA 1/2、2/2）
+
+**邊界情況：**
+
+- **未先播放直接按 Enter：** 自動播放 Option 1，播完後顯示 `▶ Played Option 1. Press [Enter] again to confirm, or [1/2/3] to play another.`
+- **按 `q` 中止：** 印出 `[WARN] Gacha aborted. Assembling with selections so far. Unselected gacha chunks will use Option 1 as default.` 並繼續執行，未選的 gacha chunk 以 Option 1（seed 42）填入。
+- **`<speed=X>` 出現在腳本第一行（無前置 chunk）：** parser 拋出 `ParseError: <speed> tag at line 1 has no preceding sentence to attach to.` 並終止，不進行任何 API 呼叫。
 
 ---
 
@@ -208,6 +227,37 @@ No API calls made.
 | 並發 | asyncio + asyncio.Semaphore |
 | 音訊播放 | macOS `afplay`（subprocess） |
 | 終端機互動 | Python `termios` + `tty` |
+
+---
+
+## 11b. audio_player.py Interface
+
+`audio_player.py` 封裝 macOS `afplay`，提供一個同步阻塞函數：
+
+```python
+def play(path: str | Path) -> None:
+    """Play audio file via afplay. Blocks until playback completes."""
+    subprocess.run(["afplay", str(path)], check=True)
+```
+
+- 播放期間 blocking（使用者按鍵不會中斷播放）
+- `check=True` 確保 afplay 非零退出時拋出例外
+- 未來擴充可換成 `playsound` 或 `pygame` 做跨平台支援，介面不變
+
+---
+
+## 11c. Error Handling Contract
+
+| 錯誤情境 | 行為 |
+|---|---|
+| Modal API 呼叫失敗 | 自動 retry 3 次（指數退避：1s, 2s, 4s），仍失敗則 `[ERROR]` 印出並終止整個 pipeline |
+| SFX 檔案不存在 | `[ERROR] SFX file not found: ~/.aidente/sfx/laugh.wav. Add the file or remove the <sfx> tag.` 並終止 |
+| `<speed>` 在腳本第一行 | `[ERROR] ParseError: <speed> tag has no preceding sentence.` 並終止（不呼叫任何 API） |
+| `ffmpeg` 未安裝 | `[ERROR] ffmpeg not found. Install via: brew install ffmpeg` 並終止 |
+| SFX sample rate 不符 | `[WARN]` 自動轉換（見 Section 8），不中止 |
+| `--keep-chunks` 目錄已存在 | 直接覆蓋，不中止，不提示 |
+
+輸出音檔格式：**永遠寫成 WAV**，無論 `-o` 的副檔名為何。
 
 ---
 
