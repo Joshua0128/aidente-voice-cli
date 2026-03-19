@@ -72,26 +72,26 @@ api_log = "~/.aidente/api_log.jsonl"   # 留空 ("") 可停用
 # ── 角色音色預設 ──────────────────────────────────────
 [profiles.narrator]
 speaker = "Ryan"
-language = "Auto"
-instruct = "calm and authoritative, documentary narrator style"
-description = "旁白，負責敘事"
+language = "Chinese"
+instruct = "沉穩的旁白，像在說故事，語速平緩"
+description = "旁白"
 
-[profiles.sakura]
-speaker = "Ono_anna"
-language = "Japanese"
-instruct = "17歲少女，活潑開朗，緊張時聲音會輕微顫抖"
-description = "主角，高中生"
+[profiles.xiaoling]
+speaker = "Vivian"
+language = "Chinese"
+instruct = "18歲少女，活潑開朗，情緒起伏大，容易緊張"
+description = "主角 小靈"
 
 [profiles.villain]
 speaker = "Dylan"
-language = "Japanese"
-instruct = "冷酷沉穩，說話緩慢有壓迫感，每個詞都充滿威脅"
-description = "反派"
+language = "Chinese"
+instruct = "冷酷反派，說話緩慢有壓迫感，每個詞都充滿威脅"
+description = "反派 暗影"
 
 [profiles.grandma]
 speaker = "Serena"
-language = "Japanese"
-instruct = "溫柔慈祥的老婆婆，說話緩慢輕柔"
+language = "Chinese"
+instruct = "溫柔慈祥的老婆婆，說話緩慢輕柔，帶著一絲憂慮"
 description = "奶奶"
 ```
 
@@ -105,21 +105,21 @@ uv run aidente-voice generate -i script.txt
 uv run aidente-voice generate -i script.txt --profile villain
 
 # CLI 參數覆蓋 profile（仍套用 profile 的其他設定）
-uv run aidente-voice generate -i script.txt --profile sakura --instruct "very sad, crying"
+uv run aidente-voice generate -i script.txt --profile xiaoling --instruct "today she is exhausted, speaking sluggishly"
 ```
 
 ---
 
 ## 撰寫腳本
 
-腳本是純文字檔（`.txt`）。中文 `。！？` 或換行自動切分成語音片段，標籤放在句子**後面**控制該句屬性。
+腳本是純文字檔（`.txt`）。`。！？` 或換行自動切分成語音片段，標籤放在句子**後面**控制該句屬性。
 
 ```
-こんにちは。
-少しゆっくり話します。<speed=0.8>
+今天天氣真好。
+我們慢慢說吧。<speed=0.8>
 <pause=1.5>
-怒りながら叫ぶ！<style=very angry, shouting>
-そっと囁く。<style=whisper, intimate>
+你竟然敢這樣對我！<style=very angry, shouting>
+沒關係，我知道了。<style=whisper, resigned>
 ```
 
 ---
@@ -131,7 +131,7 @@ uv run aidente-voice generate -i script.txt --profile sakura --instruct "very sa
 插入靜音。
 
 ```
-準備はよろしいですか。<pause=2>では、始めましょう。
+準備好了嗎？<pause=2>那我們開始。
 ```
 
 ---
@@ -141,8 +141,8 @@ uv run aidente-voice generate -i script.txt --profile sakura --instruct "very sa
 調整**前一句**語速。
 
 ```
-ゆっくり話す。<speed=0.7>
-早口で話す。<speed=1.5>
+慢慢說清楚。<speed=0.7>
+快點！快點！<speed=1.5>
 ```
 
 | 值 | 效果 |
@@ -162,11 +162,11 @@ uv run aidente-voice generate -i script.txt --profile sakura --instruct "very sa
 控制**前一句**的說話風格、情緒、語調。透過 Qwen3-TTS 的 `instruct` 欄位實現。
 
 ```
-普通に話す。
-怒りながら叫ぶ！<style=very angry, shouting>
-そっと囁く。<style=whisper, slow, intimate>
-笑いながら話す。<style=laughing, joyful>
-震える声で。<style=voice trembling with fear, barely audible>
+平靜地說話。
+我再也不想見到你！<style=very angry, shouting>
+對不起，是我的錯。<style=apologetic, voice breaking>
+哈哈哈，太好笑了！<style=laughing, joyful>
+他……他不見了。<style=voice trembling with fear, barely audible>
 ```
 
 **Qwen3-TTS 支援的聲學屬性：**
@@ -189,9 +189,9 @@ uv run aidente-voice generate -i script.txt --profile sakura --instruct "very sa
 切換**前一句**使用的音色 profile（需在 `config.toml` 中定義）。
 
 ```
-接下來，旁白說道。<voice=narrator>
-「你以為你能逃出我的手掌心嗎？」<voice=villain>
-桜花顫抖著回答：「我…我不怕你！」<style=terrified but defiant><voice=sakura>
+就在這時，旁白緩緩說道。<voice=narrator>
+「你以為你能逃出我的掌心嗎？」<voice=villain>
+小靈顫抖著回答：「我……我不怕你！」<style=terrified but defiant><voice=xiaoling>
 ```
 
 > 不設定時沿用預設 profile 或 CLI 指定的音色。
@@ -214,13 +214,13 @@ uv run aidente-voice generate -i script.txt --profile sakura --instruct "very sa
 對**前一句**合成 N 個音色變體，讓你互動選擇。
 
 ```
-この台詞は何度も録り直したい。<gacha=4>
+這句台詞我想多試幾種感覺。<gacha=4>
 ```
 
 可搭配 `<style=...>` 使用：
 
 ```
-怒りながら笑う複雑な表情。<gacha=3><style=angry yet laughing, conflicted>
+又哭又笑，情緒很複雜。<gacha=3><style=crying and laughing at the same time, conflicted>
 ```
 
 ---
@@ -292,7 +292,7 @@ uv run aidente-voice generate -i <腳本路徑> [選項]
 
 ```bash
 uv run aidente-voice generate -i script.txt \
-  --profile sakura \
+  --profile xiaoling \
   --instruct "today she is very tired, speaking sluggishly"
 ```
 
@@ -301,8 +301,8 @@ uv run aidente-voice generate -i script.txt \
 與全域 instruct **合併**，不是覆蓋：
 
 ```
-普通に話す。
-怒りながら叫ぶ！<style=very angry, shouting>
+正常說話。
+你怎麼可以這樣！<style=very angry, shouting>
 ```
 
 ### 音色設計模式（`--voice-design`）
@@ -332,7 +332,7 @@ cp laugh.wav ~/.aidente/sfx/
 腳本有 `<gacha=N>` 時，工具先合成所有普通語音，再逐一進入選音介面。
 
 ```
-[Gacha] Chunk 2: '怒りながら笑う複雑な表情。'
+[Gacha] Chunk 2: '這句台詞我想多試幾種感覺。'
   Variants: 3 | Keys: 1-3 to play, Enter to confirm, q to quit
 ```
 
@@ -358,24 +358,24 @@ default_profile = "narrator"
 [profiles.narrator]
 speaker = "Ryan"
 language = "Chinese"
-instruct = "沉穩的旁白，像是在講故事，語速平緩"
+instruct = "沉穩的旁白，像在說故事，語速平緩"
 description = "旁白"
 
-[profiles.sakura]
-speaker = "Ono_anna"
-language = "Japanese"
-instruct = "17歲少女，活潑開朗，喜歡賣萌，但情緒起伏大"
-description = "主角 桜花"
+[profiles.xiaoling]
+speaker = "Vivian"
+language = "Chinese"
+instruct = "18歲少女，活潑開朗，情緒起伏大，容易緊張"
+description = "主角 小靈"
 
 [profiles.villain]
 speaker = "Dylan"
-language = "Japanese"
+language = "Chinese"
 instruct = "冷酷反派，說話緩慢有壓迫感，每個詞都充滿威脅"
-description = "反派 影狼"
+description = "反派 暗影"
 
 [profiles.grandma]
 speaker = "Serena"
-language = "Japanese"
+language = "Chinese"
 instruct = "溫柔慈祥的老婆婆，說話緩慢輕柔，帶著一絲憂慮"
 description = "奶奶"
 ```
@@ -383,21 +383,21 @@ description = "奶奶"
 ### 第二步：撰寫腳本 `ep01.txt`
 
 ```
-黃昏時分，古老的神社前，桜花獨自等待著。<voice=narrator>
+黃昏時分，古老的祠堂前，小靈獨自等待著。<voice=narrator>
 <sfx=wind>
-「奶奶說過，這裡有能實現願望的神明……」<style=murmuring to herself, hopeful><voice=sakura>
+「奶奶說過，這裡有能實現願望的神明……」<style=murmuring to herself, hopeful><voice=xiaoling>
 <pause=0.8>
-「真可愛的小孩。」<style=cold, amused, slightly mocking><voice=villain>
+「真是個可愛的孩子。」<style=cold, amused, slightly mocking><voice=villain>
 <sfx=footsteps>
-桜花猛地轉身，心臟幾乎跳出胸口。<voice=narrator>
-「你……你是誰！」<style=startled, terrified but trying to sound brave><voice=sakura>
-「我是影狼。」<style=low, deliberate, each word heavy with menace><speed=0.85><voice=villain>
+小靈猛地轉身，心臟幾乎跳出胸口。<voice=narrator>
+「你……你是誰！」<style=startled, terrified but trying to sound brave><voice=xiaoling>
+「我叫暗影。」<style=low, deliberate, each word heavy with menace><speed=0.85><voice=villain>
 <pause=0.5>
 「你的願望——」<style=dangerously soft><voice=villain>
-「我來幫你實現。」<style=cold smile in voice><voice=villain>
+「讓我來幫你實現。」<style=cold smile in voice><voice=villain>
 <pause=1.0>
 <sfx=thunder>
-桜花退後一步，腦海中突然浮現奶奶的叮嚀。<voice=narrator>
+小靈退後一步，腦海中突然浮現奶奶的叮嚀。<voice=narrator>
 「千萬不要輕易許願……」<style=gentle, worried, echoing like a memory><voice=grandma>
 ```
 
@@ -409,22 +409,22 @@ uv run aidente-voice generate -i ep01.txt --dry-run
 
 輸出：
 ```
-[DRY RUN] Parsed 14 chunks:
-  [0]  tts    "黃昏時分，古老的神社前，桜花獨自等待著。" voice='narrator'
+[DRY RUN] Parsed 16 chunks:
+  [0]  tts    "黃昏時分，古老的祠堂前，小靈獨自等待著。" voice='narrator'
   [1]  sfx    wind fade=0.05
-  [2]  tts    "「奶奶說過，這裡有能實現願望的神明……」" style='murmuring to herself, hopeful' voice='sakura'
+  [2]  tts    "「奶奶說過，這裡有能實現願望的神明……」" style='murmuring to herself, hopeful' voice='xiaoling'
   [3]  pause  0.8s
-  [4]  tts    "「真可愛的小孩。」" style='cold, amused, slightly mocking' voice='villain'
+  [4]  tts    "「真是個可愛的孩子。」" style='cold, amused, slightly mocking' voice='villain'
   [5]  sfx    footsteps fade=0.05
-  [6]  tts    "桜花猛地轉身，心臟幾乎跳出胸口。" voice='narrator'
-  [7]  tts    "「你……你是誰！」" style='startled, terrified but trying to sound brave' voice='sakura'
-  [8]  tts    "「我是影狼。」" style='low, deliberate, each word heavy with menace' speed=0.85 voice='villain'
+  [6]  tts    "小靈猛地轉身，心臟幾乎跳出胸口。" voice='narrator'
+  [7]  tts    "「你……你是誰！」" style='startled, terrified but trying to sound brave' voice='xiaoling'
+  [8]  tts    "「我叫暗影。」" style='low, deliberate, each word heavy with menace' speed=0.85 voice='villain'
   [9]  pause  0.5s
   [10] tts    "「你的願望——」" style='dangerously soft' voice='villain'
-  [11] tts    "「我來幫你實現。」" style='cold smile in voice' voice='villain'
+  [11] tts    "「讓我來幫你實現。」" style='cold smile in voice' voice='villain'
   [12] pause  1.0s
   [13] sfx    thunder fade=0.05
-  [14] tts    "桜花退後一步，腦海中突然浮現奶奶的叮嚀。" voice='narrator'
+  [14] tts    "小靈退後一步，腦海中突然浮現奶奶的叮嚀。" voice='narrator'
   [15] tts    "「千萬不要輕易許願……」" style='gentle, worried, echoing like a memory' voice='grandma'
 No API calls made.
 ```
@@ -447,7 +447,7 @@ ls chunks/
 ### 第六步：某句效果不理想？用 Gacha 重錄
 
 ```
-「你……你是誰！」<style=startled, terrified but trying to sound brave><gacha=4><voice=sakura>
+「你……你是誰！」<style=startled, terrified but trying to sound brave><gacha=4><voice=xiaoling>
 ```
 
 ```bash
@@ -489,10 +489,10 @@ export MODAL_TTS_URL="https://waiting-hchs--qwen3-tts-qwen3tts-api.modal.run/cus
 同上，`<style>` 也必須接在句子後面：
 ```
 # ❌
-<style=angry> 叫ぶ！
+<style=angry> 你竟敢！
 
 # ✅
-叫ぶ！<style=angry, shouting>
+你竟敢！<style=angry, shouting>
 ```
 
 ### `ParseError: <speed> tag has no preceding sentence`
