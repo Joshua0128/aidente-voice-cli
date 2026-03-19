@@ -1,6 +1,5 @@
 """Sequential TTS pipeline orchestrator."""
 
-import asyncio
 import tempfile
 from pathlib import Path
 
@@ -32,6 +31,8 @@ async def run_pipeline(
 
 async def _run_gacha(chunk: Chunk, client: TTSClient) -> bytes:
     """Synthesize N gacha variants, let user pick one interactively."""
+    if chunk.gacha_n < 1:
+        raise ValueError(f"gacha_n must be >= 1, got {chunk.gacha_n}")
     seeds = GACHA_SEEDS[:chunk.gacha_n]
 
     with tempfile.TemporaryDirectory() as tmpdir:

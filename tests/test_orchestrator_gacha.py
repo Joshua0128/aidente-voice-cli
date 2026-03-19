@@ -4,6 +4,7 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
+from aidente_voice.gacha import GACHA_SEEDS
 from aidente_voice.models import Chunk
 from aidente_voice.pipeline.orchestrator import run_pipeline
 
@@ -21,8 +22,6 @@ class FakeTTSClient:
 @pytest.mark.asyncio
 async def test_gacha_synthesizes_n_variants():
     """Gacha chunk should call synthesize for each seed in GACHA_SEEDS[:n]."""
-    from aidente_voice.gacha import GACHA_SEEDS
-
     n = 3
     chunk = Chunk(index=0, type="gacha", text="テスト", gacha_n=n)
     client = FakeTTSClient()
@@ -40,8 +39,6 @@ async def test_gacha_synthesizes_n_variants():
 @pytest.mark.asyncio
 async def test_gacha_returns_selected_audio():
     """Orchestrator should return the audio for the user-selected variant."""
-    from aidente_voice.gacha import GACHA_SEEDS
-
     n = 2
     seed_audio = {
         GACHA_SEEDS[0]: b"AUDIO_VARIANT_0",
