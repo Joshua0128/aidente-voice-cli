@@ -8,7 +8,7 @@ from rich.console import Console
 
 from aidente_voice.models import Chunk
 from aidente_voice.parser import parse, ParseError
-from aidente_voice.tts.modal_client import ModalTTSClient
+from aidente_voice.tts.modal_client import ModalTTSClient, CustomVoiceConfig, VoiceDesignConfig
 from aidente_voice.pipeline.orchestrator import run_pipeline
 from aidente_voice.pipeline.assembler import assemble
 
@@ -44,6 +44,26 @@ def generate(
     max_concurrent: int = typer.Option(10, "--max-concurrent"),
     keep_chunks: bool = typer.Option(False, "--keep-chunks"),
     dry_run: bool = typer.Option(False, "--dry-run"),
+    speaker: str = typer.Option(
+        "Ryan",
+        "--speaker",
+        help="Speaker for /custom-voice: Aiden, Dylan, Eric, Ono_anna, Ryan, Serena, Sohee, Uncle_fu, Vivian",
+    ),
+    language: str = typer.Option(
+        "Japanese",
+        "--language",
+        help="Language hint: Auto, Chinese, English, Japanese, Korean, French, German, Spanish, Portuguese, Russian",
+    ),
+    instruct: str | None = typer.Option(
+        None,
+        "--instruct",
+        help='Style instruction, e.g. "Speak slowly with a warm tone"',
+    ),
+    voice_design: str | None = typer.Option(
+        None,
+        "--voice-design",
+        help='Use /voice-design endpoint with this description instead of /custom-voice',
+    ),
 ) -> None:
     """Generate TTS audio from a script with control tags."""
     if not input.exists():
@@ -67,7 +87,15 @@ def generate(
         console.print("[red][ERROR][/] MODAL_TTS_URL environment variable not set.")
         raise typer.Exit(code=1)
 
-    client = ModalTTSClient(endpoint_url=modal_url)
+    if voice_design is not None:
+        base_url = modal_url.rstrip("/").rsplit("/", 1)[0] if modal_url.endswith(("/custom-voice", "/voice-design", "/voice-clone")) else modal_url
+        tts_url = f"{base_url}/voice-design"
+        config: CustomVoiceConfig | VoiceDesignConfig = VoiceDesignConfig(instruct=voice_design, language=language)
+    else:
+        tts_url = modal_url
+        config = CustomVoiceConfig(speaker=speaker, language=language, instruct=instruct)
+
+    client = ModalTTSClient(endpoint_url=tts_url, config=config)
 
     try:
         results = asyncio.run(run_pipeline(chunks, client=client))
