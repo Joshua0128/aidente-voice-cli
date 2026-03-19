@@ -1,6 +1,7 @@
 """Phase 2 integration tests: gacha workflow."""
 
 import io
+import math
 import struct
 import wave
 from pathlib import Path
@@ -26,7 +27,6 @@ def _make_wav_bytes(seed: int = 0, duration_ms: int = 100) -> bytes:
         wf.setframerate(sample_rate)
         # Use seed to vary the frequency slightly
         freq = 440 + seed * 10
-        import math
         frames = struct.pack(f'<{n_samples}h', *[
             int(32767 * math.sin(2 * math.pi * freq * i / sample_rate))
             for i in range(n_samples)
@@ -42,7 +42,7 @@ class FakeTTSClient:
 
 
 @pytest.mark.asyncio
-async def test_gacha_selects_correct_variant(tmp_path):
+async def test_gacha_selects_correct_variant():
     """Pipeline returns audio for the seed at the selected gacha index."""
     from aidente_voice.gacha import GACHA_SEEDS
 
@@ -62,7 +62,7 @@ async def test_gacha_selects_correct_variant(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_gacha_mixed_with_tts(tmp_path):
+async def test_gacha_mixed_with_tts():
     """Pipeline handles a mix of tts and gacha chunks correctly."""
     from aidente_voice.gacha import GACHA_SEEDS
 
