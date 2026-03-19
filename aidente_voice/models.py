@@ -12,3 +12,4 @@ class Chunk:
     gacha_n: int = 1
     sfx_name: str | None = None
     sfx_fade: float = 0.05
+    instruct: str | None = None
