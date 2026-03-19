@@ -1,0 +1,16 @@
+黃昏時分，古老的祠堂前，小靈獨自等待著。<voice=narrator>
+<sfx=wind>
+「奶奶說過，這裡有能實現願望的神明……」<style=murmuring to herself, hopeful><voice=xiaoling>
+<pause=0.8>
+「真是個可愛的孩子。」<style=cold, amused, slightly mocking><voice=villain>
+<sfx=footsteps>
+小靈猛地轉身，心臟幾乎跳出胸口。<voice=narrator>
+「你……你是誰！」<style=startled, terrified but trying to sound brave><voice=xiaoling>
+「我叫暗影。」<style=low, deliberate, each word heavy with menace><speed=0.85><voice=villain>
+<pause=0.5>
+「你的願望——」<style=dangerously soft><voice=villain>
+「讓我來幫你實現。」<style=cold smile in voice><voice=villain>
+<pause=1.0>
+<sfx=thunder>
+小靈退後一步，腦海中突然浮現奶奶的叮嚀。<voice=narrator>
+「千萬不要輕易許願……」<style=gentle, worried, echoing like a memory><voice=grandma>

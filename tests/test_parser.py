@@ -106,3 +106,20 @@ def test_voice_tag_independent_per_chunk():
     chunks = parse("普通に話す。\n旁白說話。<voice=narrator>")
     assert chunks[0].voice_profile is None
     assert chunks[1].voice_profile == "narrator"
+
+def test_quoted_sentence_not_split_at_closing_mark():
+    """「句子。」 should be one chunk, not split at 。."""
+    chunks = parse("「真是個可愛的孩子。」<style=cold>")
+    assert len(chunks) == 1
+    assert chunks[0].text == "「真是個可愛的孩子。」"
+    assert chunks[0].instruct == "cold"
+
+def test_quoted_sentence_with_exclamation():
+    chunks = parse("「你……你是誰！」<style=terrified>")
+    assert len(chunks) == 1
+    assert chunks[0].text == "「你……你是誰！」"
+
+def test_two_lines_are_separate_chunks():
+    """Newline still splits correctly."""
+    chunks = parse("第一句。\n第二句。")
+    assert len(chunks) == 2

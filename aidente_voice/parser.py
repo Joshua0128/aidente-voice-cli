@@ -2,7 +2,7 @@ import re
 from aidente_voice.models import Chunk
 
 TAG_RE = re.compile(r'<(speed|pause|gacha|sfx|style|voice)=([^>]+)>')
-SENTENCE_END_RE = re.compile(r'(?<=[。！？])\s*|\n+')
+SENTENCE_END_RE = re.compile(r'(?<=[。！？])(?!」)\s*|\n+')
 
 
 class ParseError(ValueError):
