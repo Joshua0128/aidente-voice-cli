@@ -70,3 +70,21 @@ def test_full_example():
 def test_empty_text_segments_ignored():
     chunks = parse("Hello。\n\nWorld。")
     assert len(chunks) == 2
+
+def test_style_tag_attaches_to_preceding():
+    chunks = parse("怒りながら叫ぶ。<style=very angry, shouting>")
+    assert chunks[0].instruct == "very angry, shouting"
+
+def test_style_tag_at_start_raises():
+    with pytest.raises(ParseError, match="no preceding sentence"):
+        parse("<style=angry> Some sentence。")
+
+def test_style_tag_does_not_affect_speed():
+    chunks = parse("怒りながらゆっくり。<speed=0.7><style=angry but slow>")
+    assert chunks[0].speed == 0.7
+    assert chunks[0].instruct == "angry but slow"
+
+def test_style_tag_independent_per_chunk():
+    chunks = parse("普通に話す。\n怒りながら。<style=very angry>")
+    assert chunks[0].instruct is None
+    assert chunks[1].instruct == "very angry"

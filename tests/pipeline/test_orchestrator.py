@@ -18,7 +18,7 @@ async def test_tts_chunks_are_synthesized(mock_client):
         Chunk(index=0, type="tts", text="Hello world。"),
     ]
     result = await run_pipeline(chunks, client=mock_client)
-    mock_client.synthesize.assert_called_once_with("Hello world。", seed=0)
+    mock_client.synthesize.assert_called_once_with("Hello world。", seed=0, instruct=None)
     assert len(result) == 1
     assert result[0][0] == chunks[0]
 

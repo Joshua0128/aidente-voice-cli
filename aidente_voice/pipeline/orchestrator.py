@@ -16,7 +16,7 @@ async def run_pipeline(
 
     for chunk in chunks:
         if chunk.type in ("tts", "gacha"):
-            audio = await client.synthesize(chunk.text or "", seed=0)
+            audio = await client.synthesize(chunk.text or "", seed=0, instruct=chunk.instruct)
             if chunk.speed != 1.0:
                 audio = apply_speed(audio, chunk.speed)
             results.append((chunk, audio))
