@@ -1,0 +1,7 @@
+你好 我是星期天。<speed=1.1>
+我前幾天有預約貴公司的廣告是因。<speed=0.8>
+<pause=1.5>
+欸...星。
+<pause=0.2>
+齊天先生，你有聽到我的聲音嗎？ <style=very chill, with smile>
+有，我有聽到。<speed=1.2>
