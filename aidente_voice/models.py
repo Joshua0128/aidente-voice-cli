@@ -13,3 +13,4 @@ class Chunk:
     sfx_name: str | None = None
     sfx_fade: float = 0.05
     instruct: str | None = None
+    voice_profile: str | None = None  # name of profile from config, set by <voice=...> tag

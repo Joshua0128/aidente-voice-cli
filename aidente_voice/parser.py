@@ -1,7 +1,7 @@
 import re
 from aidente_voice.models import Chunk
 
-TAG_RE = re.compile(r'<(speed|pause|gacha|sfx|style)=([^>]+)>')
+TAG_RE = re.compile(r'<(speed|pause|gacha|sfx|style|voice)=([^>]+)>')
 SENTENCE_END_RE = re.compile(r'(?<=[。！？])\s*|\n+')
 
 
@@ -83,5 +83,10 @@ def parse(text: str) -> list[Chunk]:
                 if not chunks or chunks[-1].type not in ("tts", "gacha"):
                     raise ParseError("<style> tag has no preceding sentence to attach to.")
                 chunks[-1].instruct = value.strip()
+
+            elif name == "voice":
+                if not chunks or chunks[-1].type not in ("tts", "gacha"):
+                    raise ParseError("<voice> tag has no preceding sentence to attach to.")
+                chunks[-1].voice_profile = value.strip()
 
     return chunks

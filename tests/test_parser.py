@@ -88,3 +88,21 @@ def test_style_tag_independent_per_chunk():
     chunks = parse("普通に話す。\n怒りながら。<style=very angry>")
     assert chunks[0].instruct is None
     assert chunks[1].instruct == "very angry"
+
+def test_voice_tag_attaches_to_preceding():
+    chunks = parse("旁白說話。<voice=narrator>")
+    assert chunks[0].voice_profile == "narrator"
+
+def test_voice_tag_at_start_raises():
+    with pytest.raises(ParseError, match="no preceding sentence"):
+        parse("<voice=narrator> Some sentence。")
+
+def test_voice_tag_does_not_affect_style():
+    chunks = parse("怒りながら話す。<style=angry><voice=sakura>")
+    assert chunks[0].instruct == "angry"
+    assert chunks[0].voice_profile == "sakura"
+
+def test_voice_tag_independent_per_chunk():
+    chunks = parse("普通に話す。\n旁白說話。<voice=narrator>")
+    assert chunks[0].voice_profile is None
+    assert chunks[1].voice_profile == "narrator"

@@ -57,21 +57,24 @@ class ModalTTSClient:
         self._log_path = log_path
 
     def _build_payload(self, text: str, instruct: str | None = None) -> dict:
-        # Merge global config instruct with per-call instruct (from <style=...> tag).
-        config_instruct = self._config.instruct if isinstance(self._config, CustomVoiceConfig) else None
-        if config_instruct and instruct:
-            effective_instruct = f"{config_instruct}; {instruct}"
-        else:
-            effective_instruct = instruct or config_instruct
-
         if isinstance(self._config, VoiceDesignConfig):
+            # self._config.instruct is the voice description (required field).
+            # Merge per-sentence <style=...> as a suffix — never replace the voice description.
+            voice_desc = self._config.instruct
+            effective_instruct = f"{voice_desc}; {instruct}" if instruct else voice_desc
             return {
                 "text": text,
                 "language": self._config.language,
-                "instruct": effective_instruct or self._config.instruct,
+                "instruct": effective_instruct,
             }
 
-        # CustomVoiceConfig
+        # CustomVoiceConfig: merge global instruct with per-call instruct from <style=...>.
+        config_instruct = self._config.instruct
+        if config_instruct and instruct:
+            effective_instruct: str | None = f"{config_instruct}; {instruct}"
+        else:
+            effective_instruct = instruct or config_instruct
+
         payload: dict = {
             "text": text,
             "language": self._config.language,

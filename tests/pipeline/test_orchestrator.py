@@ -57,3 +57,40 @@ async def test_speed_one_skips_postprocess(mock_client):
     with patch("aidente_voice.pipeline.orchestrator.apply_speed") as mock_speed:
         await run_pipeline(chunks, client=mock_client)
     mock_speed.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_profile_client_used_when_chunk_has_voice_profile(mock_client):
+    profile_client = AsyncMock()
+    profile_client.synthesize.return_value = b"profile_audio"
+
+    chunks = [Chunk(index=0, type="tts", text="旁白說話。", voice_profile="narrator")]
+    result = await run_pipeline(
+        chunks, client=mock_client, profile_clients={"narrator": profile_client}
+    )
+
+    profile_client.synthesize.assert_called_once_with("旁白說話。", seed=0, instruct=None)
+    mock_client.synthesize.assert_not_called()
+    assert result[0][1] == b"profile_audio"
+
+
+@pytest.mark.asyncio
+async def test_default_client_used_when_profile_not_in_profile_clients(mock_client):
+    profile_client = AsyncMock()
+
+    chunks = [Chunk(index=0, type="tts", text="Hello。", voice_profile="unknown")]
+    result = await run_pipeline(
+        chunks, client=mock_client, profile_clients={"narrator": profile_client}
+    )
+
+    mock_client.synthesize.assert_called_once()
+    profile_client.synthesize.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_default_client_used_when_no_voice_profile(mock_client):
+    chunks = [Chunk(index=0, type="tts", text="Hello。")]
+    profile_client = AsyncMock()
+    await run_pipeline(chunks, client=mock_client, profile_clients={"narrator": profile_client})
+    mock_client.synthesize.assert_called_once()
+    profile_client.synthesize.assert_not_called()

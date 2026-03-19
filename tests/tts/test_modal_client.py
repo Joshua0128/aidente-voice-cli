@@ -193,3 +193,42 @@ async def test_synthesize_raises_after_max_retries(client):
         with patch("asyncio.sleep"):
             with pytest.raises(RuntimeError, match="TTS API failed"):
                 await client.synthesize("Test")
+
+
+@pytest.mark.asyncio
+async def test_voice_design_per_call_instruct_merges_not_replaces():
+    """Bug fix: <style=...> should append to voice description, not replace it."""
+    client = ModalTTSClient(
+        endpoint_url="https://fake.modal.run/voice-design",
+        config=VoiceDesignConfig(instruct="A warm female voice", language="Auto"),
+        log_path=None,
+    )
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.content = b"audio"
+
+    with patch("requests.post", return_value=mock_response) as mock_post:
+        await client.synthesize("Hello", instruct="very angry, shouting")
+
+    payload = mock_post.call_args.kwargs.get("json") or mock_post.call_args.args[1]
+    # Voice description must be preserved; per-call instruct appended
+    assert payload["instruct"] == "A warm female voice; very angry, shouting"
+    assert "speaker" not in payload
+
+
+@pytest.mark.asyncio
+async def test_voice_design_no_per_call_instruct_uses_voice_desc():
+    client = ModalTTSClient(
+        endpoint_url="https://fake.modal.run/voice-design",
+        config=VoiceDesignConfig(instruct="A warm female voice", language="Auto"),
+        log_path=None,
+    )
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.content = b"audio"
+
+    with patch("requests.post", return_value=mock_response) as mock_post:
+        await client.synthesize("Hello")
+
+    payload = mock_post.call_args.kwargs.get("json") or mock_post.call_args.args[1]
+    assert payload["instruct"] == "A warm female voice"
