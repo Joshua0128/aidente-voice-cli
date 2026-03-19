@@ -11,21 +11,15 @@ from aidente_voice.pipeline.orchestrator import run_pipeline
 class FakeTTSClient:
     def __init__(self):
         self.calls: list[tuple[str, int]] = []
-        self._lock = asyncio.Lock()
         self.concurrent_count = 0
         self.max_concurrent_seen = 0
 
     async def synthesize(self, text: str, seed: int = 0) -> bytes:
-        async with self._lock:
-            self.concurrent_count += 1
-            self.max_concurrent_seen = max(self.max_concurrent_seen, self.concurrent_count)
-
+        self.concurrent_count += 1
+        self.max_concurrent_seen = max(self.max_concurrent_seen, self.concurrent_count)
         self.calls.append((text, seed))
-        await asyncio.sleep(0)  # yield control
-
-        async with self._lock:
-            self.concurrent_count -= 1
-
+        await asyncio.sleep(0)  # yield - concurrent tasks can run here
+        self.concurrent_count -= 1
         return f"AUDIO_{text}_{seed}".encode()
 
 
