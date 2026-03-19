@@ -41,11 +41,11 @@ async def test_custom_voice_payload(client):
 
 
 @pytest.mark.asyncio
-async def test_per_call_instruct_overrides_config():
-    """<style=...> tag instruct overrides config-level instruct."""
+async def test_per_call_instruct_merges_with_config():
+    """<style=...> tag instruct is merged with config-level instruct."""
     client = ModalTTSClient(
         endpoint_url="https://fake.modal.run/custom-voice",
-        config=CustomVoiceConfig(speaker="Serena", language="Japanese", instruct="global style"),
+        config=CustomVoiceConfig(speaker="Serena", language="Japanese", instruct="calm and professional"),
     )
     mock_response = MagicMock()
     mock_response.status_code = 200
@@ -55,7 +55,7 @@ async def test_per_call_instruct_overrides_config():
         await client.synthesize("テスト", instruct="very angry, shouting")
 
     payload = mock_post.call_args.kwargs.get("json") or mock_post.call_args.args[1]
-    assert payload["instruct"] == "very angry, shouting"
+    assert payload["instruct"] == "calm and professional; very angry, shouting"
 
 
 @pytest.mark.asyncio

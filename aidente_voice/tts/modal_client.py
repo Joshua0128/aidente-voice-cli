@@ -50,10 +50,14 @@ class ModalTTSClient:
         self._config = config or CustomVoiceConfig()
 
     def _build_payload(self, text: str, instruct: str | None = None) -> dict:
-        # Per-call instruct overrides config-level instruct
-        effective_instruct = instruct if instruct is not None else (
-            self._config.instruct if isinstance(self._config, CustomVoiceConfig) else None
-        )
+        # Merge global config instruct with per-call instruct (from <style=...> tag).
+        # Both present: "global; per-sentence" so the model sees full context.
+        # Only one present: use whichever exists.
+        config_instruct = self._config.instruct if isinstance(self._config, CustomVoiceConfig) else None
+        if config_instruct and instruct:
+            effective_instruct = f"{config_instruct}; {instruct}"
+        else:
+            effective_instruct = instruct or config_instruct
 
         if isinstance(self._config, VoiceDesignConfig):
             return {
