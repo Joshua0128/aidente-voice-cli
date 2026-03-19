@@ -1,13 +1,14 @@
 import asyncio
 import os
 from pathlib import Path
+from typing import Optional
 
 import typer
 from rich.console import Console
 
 from aidente_voice.models import Chunk
 from aidente_voice.parser import parse, ParseError
-from aidente_voice.tts.modal_client import ModalTTSClient, CustomVoiceConfig, VoiceDesignConfig
+from aidente_voice.tts.modal_client import ModalTTSClient, CustomVoiceConfig, VoiceDesignConfig, _DEFAULT_LOG_PATH
 from aidente_voice.pipeline.orchestrator import run_pipeline
 from aidente_voice.pipeline.assembler import assemble
 
@@ -56,26 +57,33 @@ def generate(
         "--language",
         help="Language: Auto, Chinese, English, Japanese, Korean, French, German, Spanish, Portuguese, Russian",
     ),
-    instruct: str | None = typer.Option(
+    instruct: Optional[str] = typer.Option(
         None,
         "--instruct",
-        help='Global speaking style, e.g. "Speak slowly with a warm tone". Overridden per-sentence by <style=...> tags.',
+        help='Global speaking style. Merged with per-sentence <style=...> tags.',
     ),
-    voice_design: str | None = typer.Option(
+    voice_design: Optional[str] = typer.Option(
         None,
         "--voice-design",
         help='Use /voice-design endpoint. Describe the voice: "A warm husky male narrator"',
     ),
+    # Logging options
+    api_log: Optional[Path] = typer.Option(
+        _DEFAULT_LOG_PATH,
+        "--api-log",
+        help="Path to JSONL API log file. Each call appended as one JSON line.",
+        show_default=True,
+    ),
+    no_api_log: bool = typer.Option(
+        False,
+        "--no-api-log",
+        help="Disable API call logging.",
+    ),
 ) -> None:
     """Generate TTS audio from a script with control tags.
 
-    Acoustic attributes can be controlled globally via --instruct,
-    or per-sentence in the script using <style=...> tags.
-
-    Examples:
-        --instruct "Speak slowly and warmly"
-        --speaker Ono_anna --language Japanese
-        --voice-design "A young enthusiastic male, slightly sarcastic but friendly"
+    Every outgoing API call is logged to ~/.aidente/api_log.jsonl by default.
+    Use --api-log to change the path, or --no-api-log to disable.
 
     In-script style tag:
         普通に話す。
@@ -104,7 +112,6 @@ def generate(
         raise typer.Exit(code=1)
 
     if voice_design is not None:
-        # Strip endpoint suffix if user set URL to /custom-voice, swap to /voice-design
         base = modal_url.rstrip("/")
         for suffix in ("/custom-voice", "/voice-design", "/voice-clone"):
             if base.endswith(suffix):
@@ -118,7 +125,11 @@ def generate(
         tts_url = modal_url
         config = CustomVoiceConfig(speaker=speaker, language=language, instruct=instruct)
 
-    client = ModalTTSClient(endpoint_url=tts_url, config=config)
+    log_path = None if no_api_log else api_log
+    if log_path:
+        console.print(f"[dim]API log → {log_path}[/]")
+
+    client = ModalTTSClient(endpoint_url=tts_url, config=config, log_path=log_path)
 
     try:
         results = asyncio.run(run_pipeline(chunks, client=client))

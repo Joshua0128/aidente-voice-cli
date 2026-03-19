@@ -81,9 +81,7 @@ def parse(text: str) -> list[Chunk]:
 
             elif name == "style":
                 if not chunks or chunks[-1].type not in ("tts", "gacha"):
-                    raise ParseError(
-                        f"<style> tag has no preceding sentence to attach to."
-                    )
+                    raise ParseError("<style> tag has no preceding sentence to attach to.")
                 chunks[-1].instruct = value.strip()
 
     return chunks
