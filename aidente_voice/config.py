@@ -25,7 +25,8 @@ import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
-_DEFAULT_CONFIG_PATH = Path.home() / ".aidente" / "config.toml"
+_GLOBAL_CONFIG_PATH = Path.home() / ".aidente" / "config.toml"
+_LOCAL_CONFIG_PATH = Path("config.toml")  # current working directory
 
 
 @dataclass
@@ -61,12 +62,24 @@ class AidenteConfig:
     profiles: dict[str, VoiceProfile] = field(default_factory=dict)
 
 
-def load_config(path: Path = _DEFAULT_CONFIG_PATH) -> AidenteConfig:
+def load_config(path: Path | None = None) -> AidenteConfig:
     """Load config from *path*.
 
-    Returns an AidenteConfig with defaults if the file doesn't exist.
+    If path is None, checks in order:
+      1. ./config.toml  (project-local)
+      2. ~/.aidente/config.toml  (global)
+
+    Returns an AidenteConfig with defaults if no config file is found.
     Raises ValueError for schema errors in the TOML file.
     """
+    if path is None:
+        if _LOCAL_CONFIG_PATH.exists():
+            path = _LOCAL_CONFIG_PATH
+        elif _GLOBAL_CONFIG_PATH.exists():
+            path = _GLOBAL_CONFIG_PATH
+        else:
+            return AidenteConfig()
+
     if not path.exists():
         return AidenteConfig()
 

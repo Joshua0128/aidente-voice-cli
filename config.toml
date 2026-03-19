@@ -1,0 +1,26 @@
+modal_tts_url = "https://waiting-hchs--qwen3-tts-qwen3tts-api.modal.run/custom-voice"
+default_profile = "narrator"
+
+[profiles.narrator]
+speaker = "Ryan"
+language = "Chinese"
+instruct = "沉穩的旁白，像在說故事，語速平緩"
+description = "旁白"
+
+[profiles.xiaoling]
+speaker = "Vivian"
+language = "Chinese"
+instruct = "18歲少女，活潑開朗，情緒起伏大，容易緊張"
+description = "主角 小靈"
+
+[profiles.villain]
+speaker = "Dylan"
+language = "Chinese"
+instruct = "冷酷反派，說話緩慢有壓迫感，每個詞都充滿威脅"
+description = "反派 暗影"
+
+[profiles.grandma]
+speaker = "Serena"
+language = "Chinese"
+instruct = "溫柔慈祥的老婆婆，說話緩慢輕柔，帶著一絲憂慮"
+description = "奶奶"
