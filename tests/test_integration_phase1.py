@@ -22,7 +22,7 @@ def _make_wav_bytes(duration_ms: int = 300) -> bytes:
 
 
 class FakeTTSClient:
-    async def synthesize(self, text: str, seed: int = 0) -> bytes:
+    async def synthesize(self, text: str, seed: int = 0, instruct: str | None = None) -> bytes:
         return _make_wav_bytes(300)
 
 

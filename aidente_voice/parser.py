@@ -1,7 +1,7 @@
 import re
 from aidente_voice.models import Chunk
 
-TAG_RE = re.compile(r'<(speed|pause|gacha|sfx)=([^>]+)>')
+TAG_RE = re.compile(r'<(speed|pause|gacha|sfx|style)=([^>]+)>')
 SENTENCE_END_RE = re.compile(r'(?<=[。！？])\s*|\n+')
 
 
@@ -78,5 +78,10 @@ def parse(text: str) -> list[Chunk]:
                     deferred_sfx.append((sfx_name, sfx_fade))
                 else:
                     add(Chunk(index=0, type="sfx", sfx_name=sfx_name, sfx_fade=sfx_fade))
+
+            elif name == "style":
+                if not chunks or chunks[-1].type not in ("tts", "gacha"):
+                    raise ParseError("<style> tag has no preceding sentence to attach to.")
+                chunks[-1].instruct = value.strip()
 
     return chunks

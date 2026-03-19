@@ -1,14 +1,14 @@
 import asyncio
 import os
-import sys
 from pathlib import Path
+from typing import Optional
 
 import typer
 from rich.console import Console
 
 from aidente_voice.models import Chunk
 from aidente_voice.parser import parse, ParseError
-from aidente_voice.tts.modal_client import ModalTTSClient
+from aidente_voice.tts.modal_client import ModalTTSClient, CustomVoiceConfig, VoiceDesignConfig, _DEFAULT_LOG_PATH
 from aidente_voice.pipeline.orchestrator import run_pipeline
 from aidente_voice.pipeline.assembler import assemble
 
@@ -26,11 +26,13 @@ def _dry_run_report(chunks: list[Chunk]) -> None:
     for c in chunks:
         if c.type == "tts":
             speed_str = f" speed={c.speed}" if c.speed != 1.0 else ""
-            console.print(f"  [{c.index}] tts    \"{c.text}\"{speed_str}")
+            style_str = f" style={c.instruct!r}" if c.instruct else ""
+            console.print(f"  [{c.index}] tts    \"{c.text}\"{speed_str}{style_str}")
         elif c.type == "pause":
             console.print(f"  [{c.index}] pause  {c.duration}s")
         elif c.type == "gacha":
-            console.print(f"  [{c.index}] gacha  \"{c.text}\" n={c.gacha_n}")
+            style_str = f" style={c.instruct!r}" if c.instruct else ""
+            console.print(f"  [{c.index}] gacha  \"{c.text}\" n={c.gacha_n}{style_str}")
         elif c.type == "sfx":
             console.print(f"  [{c.index}] sfx    {c.sfx_name} fade={c.sfx_fade}")
     console.print("No API calls made.")
@@ -44,8 +46,50 @@ def generate(
     max_concurrent: int = typer.Option(10, "--max-concurrent"),
     keep_chunks: bool = typer.Option(False, "--keep-chunks"),
     dry_run: bool = typer.Option(False, "--dry-run"),
+    # Voice options
+    speaker: str = typer.Option(
+        "Ryan",
+        "--speaker",
+        help="Speaker: Aiden, Dylan, Eric, Ono_anna, Ryan, Serena, Sohee, Uncle_fu, Vivian",
+    ),
+    language: str = typer.Option(
+        "Auto",
+        "--language",
+        help="Language: Auto, Chinese, English, Japanese, Korean, French, German, Spanish, Portuguese, Russian",
+    ),
+    instruct: Optional[str] = typer.Option(
+        None,
+        "--instruct",
+        help='Global speaking style. Merged with per-sentence <style=...> tags.',
+    ),
+    voice_design: Optional[str] = typer.Option(
+        None,
+        "--voice-design",
+        help='Use /voice-design endpoint. Describe the voice: "A warm husky male narrator"',
+    ),
+    # Logging options
+    api_log: Optional[Path] = typer.Option(
+        _DEFAULT_LOG_PATH,
+        "--api-log",
+        help="Path to JSONL API log file. Each call appended as one JSON line.",
+        show_default=True,
+    ),
+    no_api_log: bool = typer.Option(
+        False,
+        "--no-api-log",
+        help="Disable API call logging.",
+    ),
 ) -> None:
-    """Generate TTS audio from a script with control tags."""
+    """Generate TTS audio from a script with control tags.
+
+    Every outgoing API call is logged to ~/.aidente/api_log.jsonl by default.
+    Use --api-log to change the path, or --no-api-log to disable.
+
+    In-script style tag:
+        普通に話す。
+        怒りながら叫ぶ。<style=very angry, shouting>
+        そっと囁く。<style=whisper, intimate>
+    """
     if not input.exists():
         console.print(f"[red][ERROR][/] Input file not found: {input}")
         raise typer.Exit(code=1)
@@ -67,7 +111,25 @@ def generate(
         console.print("[red][ERROR][/] MODAL_TTS_URL environment variable not set.")
         raise typer.Exit(code=1)
 
-    client = ModalTTSClient(endpoint_url=modal_url)
+    if voice_design is not None:
+        base = modal_url.rstrip("/")
+        for suffix in ("/custom-voice", "/voice-design", "/voice-clone"):
+            if base.endswith(suffix):
+                base = base[: -len(suffix)]
+                break
+        tts_url = f"{base}/voice-design"
+        config: CustomVoiceConfig | VoiceDesignConfig = VoiceDesignConfig(
+            instruct=voice_design, language=language
+        )
+    else:
+        tts_url = modal_url
+        config = CustomVoiceConfig(speaker=speaker, language=language, instruct=instruct)
+
+    log_path = None if no_api_log else api_log
+    if log_path:
+        console.print(f"[dim]API log → {log_path}[/]")
+
+    client = ModalTTSClient(endpoint_url=tts_url, config=config, log_path=log_path)
 
     try:
         results = asyncio.run(run_pipeline(chunks, client=client))
