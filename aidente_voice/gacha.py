@@ -1,10 +1,11 @@
 """Gacha (variant selection) for TTS audio."""
 
-import subprocess
 import sys
 import termios
 import tty
 from pathlib import Path
+
+from aidente_voice.audio_player import play
 
 GACHA_SEEDS = [42, 1337, 7, 999, 2024, 31337, 100, 555]
 
@@ -49,7 +50,7 @@ def select_gacha(audio_paths: list[Path], text: str, position: int) -> int:
         if key == '\r' or key == '\n':
             if last_played is None:
                 # Auto-play first and return
-                subprocess.run(["afplay", str(audio_paths[0])], check=True)
+                play(audio_paths[0])
                 return 0
             return last_played
 
@@ -59,5 +60,5 @@ def select_gacha(audio_paths: list[Path], text: str, position: int) -> int:
         if key.isdigit():
             idx = int(key) - 1
             if 0 <= idx < n:
-                subprocess.run(["afplay", str(audio_paths[idx])], check=True)
+                play(audio_paths[idx])
                 last_played = idx
